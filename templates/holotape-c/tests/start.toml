@@ -1,0 +1,13 @@
+format = 1
+
+[[step]]
+expect = "tape: ready"
+
+[[step]]
+screen = "ready"
+
+[[step]]
+tap = "select"
+
+[[step]]
+exit = 0
