@@ -2,11 +2,13 @@
 # Pip-OS SDK in external/pip-os.
 #
 #   make                      the sample tapes, into build/samples/
-#   make test-host            host unit tests and the licence check
+#   make test-host            host unit tests, the licence check and the
+#                             pin checks
 #   make test                 test-host, then the QEMU tests on every board
 #   make test BOARD=raspi0    the same, the QEMU tests on one board
 #   make test-target          the QEMU tests only (BOARD=<name> or all)
 #   make check-licence        every file is MIT, every C file says so
+#   make check-pins           CI pins and doc links match the submodules
 #   make clean
 
 PIP_OS     := external/pip-os
@@ -50,17 +52,27 @@ $(HOST_TESTS): $(wildcard reel/include/reel/*.h)
 
 # ---- Checks ------------------------------------------------------------------
 
-.PHONY: check-licence tools-test
+.PHONY: check-licence check-pins check-pins-test tools-test
 
 check-licence:
 	$(PYTHON) tools/check_licence.py
+
+# RobCo-Core's scripts: the CI pins, then the doc links once per pinned
+# repository, Pip-OS and the RobCo-Core inside it.
+check-pins:
+	$(ROBCO_CORE)/tools/check_pins.sh .github/workflows/ci.yml
+	$(ROBCO_CORE)/tools/check_doc_links.sh --repo RobCo-Industries/Pip-OS . $(PIP_OS)
+	$(ROBCO_CORE)/tools/check_doc_links.sh . $(ROBCO_CORE)
+
+check-pins-test:
+	tests/host/check_pins_test.sh
 
 # The tests of the Python tools: unittest, so no pytest is needed.
 tools-test:
 	$(PYTHON) -m unittest discover -s tests/tools -p 'test_*.py'
 
 # The C host tests come from host.mk's test-host; these run first.
-test-host: check-licence tools-test
+test-host: check-licence tools-test check-pins check-pins-test
 
 # ---- QEMU tests --------------------------------------------------------------
 
