@@ -25,6 +25,9 @@ SUBSTITUTE = {
     "holotape-c": {"robco.toml"},
 }
 
+# SDK_PACKAGE.md, "Tokens": a token is @, one or more of A to Z and _,
+# then @. Any other text with an @, such as @title@, @TITLE1@ or an email
+# address, is no token and is copied as it stands.
 TOKEN_RE = re.compile(rb"@[A-Z_]+@")
 NAME_RE = re.compile(r"[A-Z0-9_-]{1,8}")
 

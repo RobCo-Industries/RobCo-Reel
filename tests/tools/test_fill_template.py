@@ -81,6 +81,25 @@ class FillTemplate(unittest.TestCase):
             fill_template.fill(src, dest, "AB", {"a.toml"})
         self.assertFalse(os.path.exists(dest))
 
+    def test_any_spec_token_fails(self):
+        for token in (b"@X@", b"@TITLE_ID@", b"@_@"):
+            src = os.path.join(self.tmp.name, "t" + token.decode())
+            self.write(src, {"a.toml": b"v = \"" + token + b"\"\n"})
+            dest = os.path.join(self.tmp.name, "p")
+            with self.assertRaisesRegex(fill_template.FillError, "templates: token"):
+                fill_template.fill(src, dest, "AB", {"a.toml"})
+            self.assertFalse(os.path.exists(dest))
+
+    def test_text_that_is_no_token_passes(self):
+        # The spec's token is @, then A to Z and _ only, then @.
+        text = (b"@title@ @TITLE1@ @Name@ @@ @ @1@\n"
+                b"mail = \"dev@example.org\" req = \"pkg@>=1.2\"\n@NAME@\n")
+        src = os.path.join(self.tmp.name, "t")
+        self.write(src, {"a.toml": text})
+        dest = os.path.join(self.tmp.name, "p")
+        fill_template.fill(src, dest, "AB", {"a.toml"})
+        self.assertEqual(snapshot(dest)["a.toml"], text.replace(b"@NAME@", b"AB"))
+
     def symlink_or_skip(self, target, link, is_dir):
         try:
             os.symlink(target, link, target_is_directory=is_dir)
