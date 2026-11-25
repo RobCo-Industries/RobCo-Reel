@@ -2,6 +2,8 @@
 # Pip-OS SDK in external/pip-os.
 #
 #   make                      the sample tapes, into build/samples/
+#   make template             the holotape-c template, filled and built
+#                             into build/template/
 #   make test-host            host unit tests, the licence check and the
 #                             pin checks
 #   make test                 test-host, then the QEMU tests on every board
@@ -35,10 +37,26 @@ HELLO_TAPE    := $(SAMPLES_BUILD)/hello/HELLO.HTP
 SUB_MAKE      := $(MAKE) --no-print-directory CI=$(CI) PYTHON=$(PYTHON)
 
 .PHONY: all samples
-all: samples
+all: samples template
 
 samples:
 	$(SUB_MAKE) -C samples/hello BUILD=$(SAMPLES_BUILD)/hello
+
+# ---- The holotape-c template, through its Makefile path ----------------------
+
+# tools/fill_template.py fills the template into a fresh folder, as
+# `robco new` would, and tests/template/Makefile builds it there with
+# pipos-app.mk. Nothing is written into templates/.
+TEMPLATE      := templates/holotape-c
+TEMPLATE_NAME := HOLOC
+TEMPLATE_DIR  := $(abspath $(BUILD))/template/holotape-c
+TEMPLATE_TAPE := $(TEMPLATE_DIR)/build/$(TEMPLATE_NAME).HTP
+
+.PHONY: template
+template:
+	rm -rf $(TEMPLATE_DIR)
+	$(PYTHON) tools/fill_template.py $(TEMPLATE) $(TEMPLATE_DIR) $(TEMPLATE_NAME)
+	$(SUB_MAKE) -C $(TEMPLATE_DIR) -f $(abspath tests/template/Makefile) NAME=$(TEMPLATE_NAME)
 
 # ---- Host unit tests, with RobCo-Core's host.mk ------------------------------
 
@@ -76,16 +94,19 @@ test-host: check-licence tools-test check-pins check-pins-test
 
 # ---- QEMU tests --------------------------------------------------------------
 
-# The launcher ROM starts the sample tape. Pip-OS's own Makefile builds
+# The launcher ROM starts one tape: one build for the hello sample, one
+# for the template. tests/test_template.py writes the template's card. Pip-OS's own Makefile builds
 # the kernel and the card, through the interface of its
 # ROM_DEVELOPMENT.md, "Using Pip-OS from another repository".
 LAUNCHER    := $(abspath $(BUILD))/launcher/ROM1.ROM
+TEMPLATE_LAUNCHER_BUILD := $(abspath $(BUILD))/launcher-template
 PIPOS_BUILD := $(abspath $(BUILD))/pipos
 PIPOS_MAKE  := $(MAKE) --no-print-directory -C $(PIP_OS) BUILD=$(PIPOS_BUILD) PYTHON=$(PYTHON)
 
 .PHONY: launcher kernel sdimage test test-target venv
 launcher:
-	$(SUB_MAKE) -C tests/launcher BUILD=$(abspath $(BUILD))/launcher
+	$(SUB_MAKE) -C tests/launcher BUILD=$(abspath $(BUILD))/launcher TAPE=HELLO.HTP
+	$(SUB_MAKE) -C tests/launcher BUILD=$(TEMPLATE_LAUNCHER_BUILD) TAPE=$(TEMPLATE_NAME).HTP
 
 kernel:
 	$(PIPOS_MAKE) kernel
@@ -103,8 +124,9 @@ $(VENV)/.installed: $(ROBCO_CORE)/tests/requirements.txt
 test: test-host
 	$(MAKE) --no-print-directory test-target
 
-test-target: sdimage kernel venv
-	$(VENV)/bin/pytest $(wildcard tests/test_*.py) -v --board $(BOARD) --build-dir $(BUILD)
+test-target: sdimage template kernel venv
+	$(VENV)/bin/pytest $(wildcard tests/test_*.py) -v --board $(BOARD) --build-dir $(BUILD) \
+	    --template-name $(TEMPLATE_NAME)
 
 clean:
 	rm -rf $(BUILD)

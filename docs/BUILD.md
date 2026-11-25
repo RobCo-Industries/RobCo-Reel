@@ -25,6 +25,7 @@ Pip-OS is the only submodule, in `external/pip-os`. RobCo-Core comes inside it, 
 | Command | What it does |
 |---|---|
 | `make` | Builds the sample tapes into `build/samples/`. Today that is `build/samples/hello/HELLO.HTP`. |
+| `make template` | Fills `templates/holotape-c` into `build/template/holotape-c/` with the project name `HOLOC`, then builds `build/template/holotape-c/build/HOLOC.HTP` there. `make` runs it too. |
 | `make CI=1` | The same, with warnings as errors, as CI builds. |
 | `make test-host` | The licence check, the tool tests, the pin checks and the host unit tests. |
 | `make test-target BOARD=raspi2b` | The QEMU tests on one board. `BOARD=all`, the default, runs the four boards. |
@@ -45,5 +46,14 @@ flowchart LR
     LD --> SEAL["rimg.py seal and verify"]
     SEAL --> HTP["HELLO.HTP"]
 ```
+
+## How the template is built
+
+A template is copied into a user's project as it stands, so it holds no Makefile. Reel builds it the way a new project would be made:
+
+1. `tools/fill_template.py` copies `templates/holotape-c/` into `build/template/holotape-c/` and replaces `@NAME@` in `robco.toml` with `HOLOC`. It refuses a destination inside the template folder, so nothing is ever written there.
+2. Make runs `tests/template/Makefile` in that copy. It sets `NAME`, `TITLE`, `VERSION`, `SUBTYPE`, `ICON`, `ABI` and `SRCS` to the values of the template's `robco.toml`, then includes `pipos-app.mk`.
+
+The pinned Pip-OS SDK does not read `ABI` yet, and its headers report ABI 1.3. The tape calls nothing newer than 1.3, so it builds and runs as it is.
 
 Reel is compiled into the tape from its sources. There is no `libreel.a` yet, because `pipos-app.mk` has no setting for an extra archive.
