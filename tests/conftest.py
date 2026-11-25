@@ -20,6 +20,8 @@ import pytest  # noqa: E402
 def pytest_addoption(parser):
     parser.addoption("--build-dir", default="build",
                      help="build directory, as BUILD in the Makefile")
+    parser.addoption("--template-name", default="HOLOC",
+                     help="project name of the filled template, as TEMPLATE_NAME in the Makefile")
 
 
 def _built(request, *parts):
