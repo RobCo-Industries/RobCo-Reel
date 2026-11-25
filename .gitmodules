@@ -1,0 +1,3 @@
+[submodule "external/pip-os"]
+	path = external/pip-os
+	url = https://github.com/RobCo-Industries/Pip-OS.git
