@@ -4,7 +4,7 @@
 
 `make test-host` runs, in order:
 
-1. `tools/check_licence.py`: every file is MIT, see [CONTRIBUTING.md](../CONTRIBUTING.md#licence).
+1. `tools/check_licence.py`: every file is MIT, see [CONTRIBUTING.md](../CONTRIBUTING.md#licence). It does not look inside `external/`.
 2. The tests of that script, in `tests/tools/`, with `unittest`.
 3. `make check-pins`, then `tests/host/check_pins_test.sh`, which proves that a stale pin in a copy of the repository fails the check.
 4. The C tests, `tests/host/test_*.c`, built for the host with RobCo-Core's [`mk/host.mk`](https://github.com/RobCo-Industries/RobCo-Core/blob/79cbd82d42c1ae6df371b05f7a3f1165ec86003f/mk/host.mk). They use the CI's flags: `-std=gnu11 -Wall -Wextra -Werror`, with AddressSanitizer and UndefinedBehaviorSanitizer when the compiler has them. When the host compiler is clang, `host.mk` also compiles every file with the cross GCC to catch GCC-only warnings.

@@ -47,5 +47,3 @@ flowchart LR
 ```
 
 Reel is compiled into the tape from its sources. There is no `libreel.a` yet, because `pipos-app.mk` has no setting for an extra archive.
-
-The hello tape is 3716 bytes with Pip-OS `5f891e7` and `arm-none-eabi-gcc` 15.2.0. Another compiler gives another size.

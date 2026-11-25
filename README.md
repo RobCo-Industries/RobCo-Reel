@@ -9,7 +9,7 @@ This is a skeleton. No runtime feature works yet.
 What exists:
 
 - `reel/`: the library, with one function, `reel_version()`, and its header.
-- `samples/hello/`: a tape that links Reel, logs one line and exits. It builds with the Pip-OS SDK into a sealed `ROBCO78` image of 3716 bytes.
+- `samples/hello/`: a tape that links Reel, logs one line and exits. It builds with the Pip-OS SDK into a sealed `ROBCO78` image.
 - Host tests for the library, and one QEMU test that boots Pip-OS, starts the tape from a test ROM and waits for its line, on four boards.
 - A check that every file is MIT.
 - CI through the suite's shared workflow.
