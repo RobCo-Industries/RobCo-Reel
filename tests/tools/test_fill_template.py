@@ -81,6 +81,32 @@ class FillTemplate(unittest.TestCase):
             fill_template.fill(src, dest, "AB", {"a.toml"})
         self.assertFalse(os.path.exists(dest))
 
+    def symlink_or_skip(self, target, link, is_dir):
+        try:
+            os.symlink(target, link, target_is_directory=is_dir)
+        except (OSError, NotImplementedError) as e:
+            self.skipTest(f"cannot make links here: {e}")
+
+    def test_linked_file_fails(self):
+        src = os.path.join(self.tmp.name, "t")
+        self.write(src, {"a.toml": b"x\n", "real/b.txt": b"b\n"})
+        self.symlink_or_skip(os.path.join(src, "real", "b.txt"), os.path.join(src, "b.txt"), False)
+        dest = os.path.join(self.tmp.name, "p")
+        with self.assertRaisesRegex(fill_template.FillError, "not a regular file"):
+            fill_template.fill(src, dest, "AB", {"a.toml"})
+        self.assertFalse(os.path.exists(dest))
+
+    def test_linked_folder_fails(self):
+        src = os.path.join(self.tmp.name, "t")
+        self.write(src, {"a.toml": b"x\n"})
+        other = os.path.join(self.tmp.name, "other")
+        self.write(other, {"c.txt": b"c\n"})
+        self.symlink_or_skip(other, os.path.join(src, "sub"), True)
+        dest = os.path.join(self.tmp.name, "p")
+        with self.assertRaisesRegex(fill_template.FillError, "not a regular folder"):
+            fill_template.fill(src, dest, "AB", {"a.toml"})
+        self.assertFalse(os.path.exists(dest))
+
     def test_bad_names_fail(self):
         for name in ("", "lower", "NINECHARS", "A~1", "A B"):
             dest = os.path.join(self.tmp.name, "p")

@@ -38,6 +38,10 @@ def template_files(template):
     out = []
     for d, dirs, files in os.walk(template):
         dirs.sort()
+        for name in dirs:
+            path = os.path.join(d, name)
+            if os.path.islink(path):
+                raise FillError(f"{path}: not a regular folder")
         for name in files:
             path = os.path.join(d, name)
             if os.path.islink(path) or not os.path.isfile(path):
