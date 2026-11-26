@@ -1,0 +1,97 @@
+name: templates-package
+
+# Builds templates-<version>.zip, the templates package of RobCo-Core's
+# docs/spec/SDK_PACKAGE.md, and keeps it as an artifact on every run.
+# See docs/TEMPLATES_PACKAGE.md.
+#
+# Only the publish job publishes, and only for a pushed tag of the form
+# templates-<version>, such as templates-0.1.0. A pull request, a push to
+# main or a manual start is a dry run: the same package, as an artifact.
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "templates-*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: templates-package-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests of the package tools
+        run: make tools-test PYTHON=python3
+      # make templates-package refuses the package when a file holds this
+      # checkout's path, the build folder, the home folder, the host name
+      # or the user name.
+      - name: Build the package
+        run: |
+          make templates-package PYTHON=python3
+          ls build/templates-*.zip
+          sha256sum build/templates-*.zip | tee first.sha256
+      - name: A second build gives the same bytes
+        run: |
+          make templates-package PYTHON=python3
+          sha256sum -c first.sha256
+      - name: The tag names the package
+        if: startsWith(github.ref, 'refs/tags/templates-')
+        run: test -f "build/${{ github.ref_name }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: templates-package
+          path: build/templates-*.zip
+          if-no-files-found: error
+
+  # Publishes only for a pushed tag that starts with templates-. The
+  # package job has already refused a tag that does not name the package
+  # it built.
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/templates-')
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: templates-package
+          path: dist
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          test -f "dist/$TAG.zip"
+          test "$(ls dist | wc -l)" -eq 1
+          (cd dist && sha256sum "$TAG.zip")
+          {
+            echo "The RobCo Reel templates package $TAG: the project skeletons that robco new writes."
+            echo
+            echo "sdk.json lists every file with its SHA-256 and the commit it was built from."
+            echo "See docs/TEMPLATES_PACKAGE.md."
+          } > notes.md
+          gh release create "$TAG" "dist/$TAG.zip" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "$TAG" --notes-file notes.md

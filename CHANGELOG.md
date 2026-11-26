@@ -19,6 +19,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ree
 - `make template`: fills the template into `build/template/` and builds it through `tests/template/Makefile` and `pipos-app.mk`.
 - A QEMU test that boots the template tape on the four boards, compares its screen with the golden image, presses SELECT and reads exit status 0.
 - CI through RobCo-Core's `robco-ci.yml`, with the pin and doc link checks.
+- `make templates-package`: writes `templates-<version>.zip` with `sdk.json`, `templates.json`, `holotape-c/` and `LICENSES/MIT.txt`, from tracked files only. Two builds give the same bytes.
+- The `templates-package` workflow: builds the package twice on every run, and publishes it only for a pushed tag `templates-<version>`.
 
 ### Changed
 

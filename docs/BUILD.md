@@ -32,6 +32,8 @@ Pip-OS is the only submodule, in `external/pip-os`. RobCo-Core comes inside it, 
 | `make test` | `test-host`, then `test-target`. |
 | `make check-licence` | Fails on a GNU licence notice, an SPDX identifier other than MIT, or a C file without an MIT SPDX first line. |
 | `make check-pins` | The CI workflow and the doc links name the commits the submodules hold. |
+| `make templates-package` | Writes `build/templates-<version>.zip`, the templates package. See [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md). |
+| `make templates-package-check` | Runs Pip-OS's package checker on that archive. It fails today, see [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md#the-checker). |
 | `make clean` | Removes `build/`. |
 
 ## How a tape is built
@@ -54,6 +56,6 @@ A template is copied into a user's project as it stands, so it holds no Makefile
 1. `tools/fill_template.py` copies `templates/holotape-c/` into `build/template/holotape-c/` and replaces `@NAME@` in `robco.toml` with `HOLOC`. It refuses a destination inside the template folder, so nothing is ever written there.
 2. Make runs `tests/template/Makefile` in that copy. It sets `NAME`, `TITLE`, `VERSION`, `SUBTYPE`, `ICON`, `ABI` and `SRCS` to the values of the template's `robco.toml`, then includes `pipos-app.mk`.
 
-The pinned Pip-OS SDK does not read `ABI` yet, and its headers report ABI 1.3. The tape calls nothing newer than 1.3, so it builds and runs as it is.
+The pinned Pip-OS SDK reads `ABI`: `crt0.S` and every source get the target ABI 1.4, and its headers report ABI 1.4.
 
 Reel is compiled into the tape from its sources. There is no `libreel.a` yet, because `pipos-app.mk` has no setting for an extra archive.
