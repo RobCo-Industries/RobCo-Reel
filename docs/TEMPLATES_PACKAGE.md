@@ -34,11 +34,22 @@ flowchart LR
 
 ## The checker
 
-`make templates-package-check` runs Pip-OS's `tools/sdk_package.py check` on the archive, as it stands. That checker knows only the `pipos` package. It refuses the templates package for its name, for the missing `abi`, `tools` and `firmware`, for its `formats`, and for a layout that is not the `pipos` layout. It finds no broken entry name, no unlisted file, no wrong hash and no machine path. So the target fails today, and CI does not run it.
+`make templates-package-check` runs Pip-OS's `tools/sdk_package.py check` on the archive, unchanged. The `name` in `sdk.json` picks its `templates` rules, described in Pip-OS's [SDK_PACKAGE.md](https://github.com/RobCo-Industries/Pip-OS/blob/a0a523e121b71c29b6e0739a87bc5fa9d2890b47/docs/SDK_PACKAGE.md#rules-of-a-kind). It checks:
+
+- The file name against the `name` and `version` of `sdk.json`, and every entry name.
+- The fields of `sdk.json`: no `abi`, `tools` or `firmware`, the three `formats`, `built_from` with `RobCo-Reel` alone, MIT for every path.
+- Each file's size and SHA-256 against `files`, its CRC, and no file left unlisted.
+- `templates.json` against the spec, the `holotape-c` entry and its `robco.toml` and `tests/start.toml` byte for byte.
+- The layout: `templates.json`, `LICENSES/MIT.txt` and one folder per template, nothing else.
+- No checkout path, build folder, home folder or user name in any file.
+
+It does not check that `icon.pbm` is a 32x32 PBM, the rules of `src/main.c`, or that the golden image comes from QEMU. The QEMU test of the template covers those.
+
+The check runs in the main CI after `make templates-package`, and in the `templates-package` workflow before the upload. `tests/tools/test_templates_package.py` builds a package, sees the check pass, flips one byte of `holotape-c/src/main.c` in a copy and sees the check fail.
 
 ## The workflow
 
 `.github/workflows/templates-package.yml` runs on every pull request, on `main` and on a tag `templates-*`:
 
-- `package` runs the tool tests, builds the package twice, compares the SHA-256 and uploads the archive as the `templates-package` artifact. On a tag it checks that the tag names the archive it built.
+- `package` runs the tool tests, builds the package twice, compares the SHA-256, runs the check and uploads the archive as the `templates-package` artifact. On a tag it checks that the tag names the archive it built.
 - `publish` runs only when `github.event_name` is `push` and the ref starts with `refs/tags/templates-`. It alone holds `contents: write`. It attaches the archive to a release of that tag.

@@ -21,7 +21,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ree
 - CI through RobCo-Core's `robco-ci.yml`, with the pin and doc link checks.
 - `make templates-package`: writes `templates-<version>.zip` with `sdk.json`, `templates.json`, `holotape-c/` and `LICENSES/MIT.txt`, from tracked files only. Two builds give the same bytes.
 - The `templates-package` workflow: builds the package twice on every run, and publishes it only for a pushed tag `templates-<version>`.
+- `make templates-package-check` passes: Pip-OS's checker reads the archive with its `templates` rules. The main CI and the `templates-package` workflow run it, and a tool test shows it refuses a copy with one byte changed.
 
 ### Changed
 
-- Pip-OS pin moved to `93a07d2`, the commit that builds the `pipos` SDK package, with RobCo-Core `712db81` inside it.
+- Pip-OS pin moved to `a0a523e`, whose package checker knows the `templates` kind, with RobCo-Core `712db81` inside it.

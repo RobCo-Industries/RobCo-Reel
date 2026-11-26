@@ -33,7 +33,7 @@ Pip-OS is the only submodule, in `external/pip-os`. RobCo-Core comes inside it, 
 | `make check-licence` | Fails on a GNU licence notice, an SPDX identifier other than MIT, or a C file without an MIT SPDX first line. |
 | `make check-pins` | The CI workflow and the doc links name the commits the submodules hold. |
 | `make templates-package` | Writes `build/templates-<version>.zip`, the templates package. See [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md). |
-| `make templates-package-check` | Runs Pip-OS's package checker on that archive. It fails today, see [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md#the-checker). |
+| `make templates-package-check` | Runs Pip-OS's package checker on that archive with its `templates` rules. CI runs it. See [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md#the-checker). |
 | `make clean` | Removes `build/`. |
 
 ## How a tape is built
