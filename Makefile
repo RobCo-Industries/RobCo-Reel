@@ -106,10 +106,14 @@ $(HOST_TESTS): $(wildcard reel/include/reel/*.h)
 
 # ---- Checks ------------------------------------------------------------------
 
-.PHONY: check-licence check-pins check-pins-test tools-test
+.PHONY: check-licence check-workflows check-pins check-pins-test tools-test
 
 check-licence:
 	$(PYTHON) tools/check_licence.py
+
+# No tag, branch or event text pasted into a workflow's run: script.
+check-workflows:
+	$(PYTHON) tools/check_workflows.py
 
 # RobCo-Core's scripts: the CI pins, then the doc links once per pinned
 # repository, Pip-OS and the RobCo-Core inside it.
@@ -126,7 +130,7 @@ tools-test:
 	$(PYTHON) -m unittest discover -s tests/tools -p 'test_*.py'
 
 # The C host tests come from host.mk's test-host; these run first.
-test-host: check-licence tools-test check-pins check-pins-test
+test-host: check-licence check-workflows tools-test check-pins check-pins-test
 
 # ---- QEMU tests --------------------------------------------------------------
 

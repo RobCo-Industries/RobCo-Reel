@@ -59,9 +59,20 @@ jobs:
       # docs/SDK_PACKAGE.md. A broken rule fails the job before any upload.
       - name: Check the package
         run: make templates-package-check PYTHON=python3
+      # The tag's name reaches the shell only through env, never pasted
+      # into the script: tools/check_workflows.py refuses that. The tag
+      # must be exactly templates-<version of reel.h>.
       - name: The tag names the package
         if: startsWith(github.ref, 'refs/tags/templates-')
-        run: test -f "build/${{ github.ref_name }}.zip"
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          v=$(python3 tools/templates_package.py --print-version --version-header reel/include/reel/reel.h)
+          if [ "$TAG" != "templates-$v" ]; then
+            echo "tag $TAG is not templates-$v, the version of reel/include/reel/reel.h" >&2
+            exit 1
+          fi
+          test -f "build/templates-$v.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: templates-package
