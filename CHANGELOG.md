@@ -19,3 +19,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ree
 - `make template`: fills the template into `build/template/` and builds it through `tests/template/Makefile` and `pipos-app.mk`.
 - A QEMU test that boots the template tape on the four boards, compares its screen with the golden image, presses SELECT and reads exit status 0.
 - CI through RobCo-Core's `robco-ci.yml`, with the pin and doc link checks.
+- `make templates-package`: writes `templates-<version>.zip` with `sdk.json`, `templates.json`, `holotape-c/` and `LICENSES/MIT.txt`, from tracked files only. Two builds give the same bytes.
+- The `templates-package` workflow: builds the package twice on every run, and publishes it only for a pushed tag `templates-<version>`.
+- `make templates-package-check` passes: Pip-OS's checker reads the archive with its `templates` rules. The main CI and the `templates-package` workflow run it, and a tool test shows it refuses a copy with one byte changed.
+
+### Changed
+
+- Pip-OS pin moved to `a0a523e`, whose package checker knows the `templates` kind, with RobCo-Core `712db81` inside it.
+- `make check-workflows` runs Pip-OS's `tools/check_workflow_exprs.py` on this repository's workflows, in place of Reel's own `tools/check_workflows.py`, which missed `${{ github.ref }}` and other forms. A tool test shows a pasted `${{ github.ref }}` fails it.
+- The `templates-package` workflow keeps the first build's checksum in `$RUNNER_TEMP`. At the repository root, it made the second build refuse the tree on every run.
+- Pip-OS pin moved to `ada823c`, which has the workflow guard `tools/check_workflow_exprs.py`, with RobCo-Core `712db81` inside it. Its new boot text that writes itself is off by default, so Reel needs no change.

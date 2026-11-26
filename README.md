@@ -42,7 +42,7 @@ make test-host
 make test BOARD=raspi2b
 ```
 
-See [docs/BUILD.md](docs/BUILD.md) and [docs/TESTING.md](docs/TESTING.md). The Pip-OS SDK is described in Pip-OS's [ROM_DEVELOPMENT.md](https://github.com/RobCo-Industries/Pip-OS/blob/5f891e75ac0894beec1d4e9d8cb37c00ec0fbf3e/docs/ROM_DEVELOPMENT.md).
+See [docs/BUILD.md](docs/BUILD.md) and [docs/TESTING.md](docs/TESTING.md). The Pip-OS SDK is described in Pip-OS's [ROM_DEVELOPMENT.md](https://github.com/RobCo-Industries/Pip-OS/blob/ada823c96320f3744d2f8064d1a690d2920d048d/docs/ROM_DEVELOPMENT.md).
 
 ## Licence
 

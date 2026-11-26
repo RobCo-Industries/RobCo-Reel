@@ -2,7 +2,7 @@
 
 ## Tools
 
-The same tools as Pip-OS, see Pip-OS's [BUILD.md](https://github.com/RobCo-Industries/Pip-OS/blob/5f891e75ac0894beec1d4e9d8cb37c00ec0fbf3e/docs/BUILD.md#tools):
+The same tools as Pip-OS, see Pip-OS's [BUILD.md](https://github.com/RobCo-Industries/Pip-OS/blob/ada823c96320f3744d2f8064d1a690d2920d048d/docs/BUILD.md#tools):
 
 - GNU Make and a POSIX shell.
 - `arm-none-eabi-gcc` and binutils, for the tapes and the launcher ROM.
@@ -27,16 +27,19 @@ Pip-OS is the only submodule, in `external/pip-os`. RobCo-Core comes inside it, 
 | `make` | Builds the sample tapes into `build/samples/`. Today that is `build/samples/hello/HELLO.HTP`. |
 | `make template` | Fills `templates/holotape-c` into `build/template/holotape-c/` with the project name `HOLOC`, then builds `build/template/holotape-c/build/HOLOC.HTP` there. `make` runs it too. |
 | `make CI=1` | The same, with warnings as errors, as CI builds. |
-| `make test-host` | The licence check, the tool tests, the pin checks and the host unit tests. |
+| `make test-host` | The licence check, the workflow check, the tool tests, the pin checks and the host unit tests. |
 | `make test-target BOARD=raspi2b` | The QEMU tests on one board. `BOARD=all`, the default, runs the four boards. |
 | `make test` | `test-host`, then `test-target`. |
 | `make check-licence` | Fails on a GNU licence notice, an SPDX identifier other than MIT, or a C file without an MIT SPDX first line. |
+| `make check-workflows` | Runs Pip-OS's `tools/check_workflow_exprs.py` on `.github/workflows/*.yml` and `*.yaml`. A line with `${{` passes only as `KEY: value`, so every value reaches a script through `env:`. |
 | `make check-pins` | The CI workflow and the doc links name the commits the submodules hold. |
+| `make templates-package` | Writes `build/templates-<version>.zip`, the templates package. See [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md). |
+| `make templates-package-check` | Runs Pip-OS's package checker on that archive with its `templates` rules. CI runs it. See [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md#the-checker). |
 | `make clean` | Removes `build/`. |
 
 ## How a tape is built
 
-A sample's `Makefile` sets the tape's name and sources, includes `reel/reel.mk`, then the Pip-OS SDK's [`pipos-app.mk`](https://github.com/RobCo-Industries/Pip-OS/blob/5f891e75ac0894beec1d4e9d8cb37c00ec0fbf3e/sdk/pipos-app.mk). `reel.mk` adds Reel's sources to `SRCS` and its headers to the include path. The SDK compiles everything with its own flags: ARMv6, soft float, freestanding. It links with `crt0`, `holotape.ld` and `libpip.a`, seals the image as `ROBCO78` with RobCo-Core's `rimg.py` and verifies it.
+A sample's `Makefile` sets the tape's name and sources, includes `reel/reel.mk`, then the Pip-OS SDK's [`pipos-app.mk`](https://github.com/RobCo-Industries/Pip-OS/blob/ada823c96320f3744d2f8064d1a690d2920d048d/sdk/pipos-app.mk). `reel.mk` adds Reel's sources to `SRCS` and its headers to the include path. The SDK compiles everything with its own flags: ARMv6, soft float, freestanding. It links with `crt0`, `holotape.ld` and `libpip.a`, seals the image as `ROBCO78` with RobCo-Core's `rimg.py` and verifies it.
 
 ```mermaid
 flowchart LR
@@ -54,6 +57,6 @@ A template is copied into a user's project as it stands, so it holds no Makefile
 1. `tools/fill_template.py` copies `templates/holotape-c/` into `build/template/holotape-c/` and replaces `@NAME@` in `robco.toml` with `HOLOC`. It refuses a destination inside the template folder, so nothing is ever written there.
 2. Make runs `tests/template/Makefile` in that copy. It sets `NAME`, `TITLE`, `VERSION`, `SUBTYPE`, `ICON`, `ABI` and `SRCS` to the values of the template's `robco.toml`, then includes `pipos-app.mk`.
 
-The pinned Pip-OS SDK does not read `ABI` yet, and its headers report ABI 1.3. The tape calls nothing newer than 1.3, so it builds and runs as it is.
+The pinned Pip-OS SDK reads `ABI`: `crt0.S` and every source get the target ABI 1.4, and its headers report ABI 1.4.
 
 Reel is compiled into the tape from its sources. There is no `libreel.a` yet, because `pipos-app.mk` has no setting for an extra archive.

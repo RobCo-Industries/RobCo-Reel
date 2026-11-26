@@ -1,0 +1,115 @@
+name: templates-package
+
+# Builds templates-<version>.zip, the templates package of RobCo-Core's
+# docs/spec/SDK_PACKAGE.md, and keeps it as an artifact on every run.
+# See docs/TEMPLATES_PACKAGE.md.
+#
+# Only the publish job publishes, and only for a pushed tag of the form
+# templates-<version>, such as templates-0.1.0. A pull request, a push to
+# main or a manual start is a dry run: the same package, as an artifact.
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "templates-*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: templates-package-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests of the package tools
+        run: make tools-test PYTHON=python3
+      # make templates-package refuses the package when a file holds this
+      # checkout's path, the build folder, the home folder, the host name
+      # or the user name.
+      - name: Build the package
+        run: |
+          make templates-package PYTHON=python3
+          ls build/templates-*.zip
+          sha256sum build/templates-*.zip | tee "$RUNNER_TEMP/first.sha256"
+      # The checksum stays outside the checkout: make templates-package
+      # refuses a tree with an untracked file.
+      - name: A second build gives the same bytes
+        run: |
+          make templates-package PYTHON=python3
+          sha256sum -c "$RUNNER_TEMP/first.sha256"
+      # Pip-OS's tools/sdk_package.py check, with the templates rules of its
+      # docs/SDK_PACKAGE.md. A broken rule fails the job before any upload.
+      - name: Check the package
+        run: make templates-package-check PYTHON=python3
+      # The tag's name reaches the shell only through env, never pasted
+      # into the script: Pip-OS's tools/check_workflow_exprs.py, run by
+      # make check-workflows, refuses that. The tag must be exactly
+      # templates-<version of reel.h>.
+      - name: The tag names the package
+        if: startsWith(github.ref, 'refs/tags/templates-')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          v=$(python3 tools/templates_package.py --print-version --version-header reel/include/reel/reel.h)
+          if [ "$TAG" != "templates-$v" ]; then
+            echo "tag $TAG is not templates-$v, the version of reel/include/reel/reel.h" >&2
+            exit 1
+          fi
+          test -f "build/templates-$v.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: templates-package
+          path: build/templates-*.zip
+          if-no-files-found: error
+
+  # Publishes only for a pushed tag that starts with templates-. The
+  # package job has already refused a tag that does not name the package
+  # it built.
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/templates-')
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: templates-package
+          path: dist
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          test -f "dist/$TAG.zip"
+          test "$(ls dist | wc -l)" -eq 1
+          (cd dist && sha256sum "$TAG.zip")
+          {
+            echo "The RobCo Reel templates package $TAG: the project skeletons that robco new writes."
+            echo
+            echo "sdk.json lists every file with its SHA-256 and the commit it was built from."
+            echo "See docs/TEMPLATES_PACKAGE.md."
+          } > notes.md
+          gh release create "$TAG" "dist/$TAG.zip" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "$TAG" --notes-file notes.md

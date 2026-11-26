@@ -7,13 +7,13 @@
 1. `tools/check_licence.py`: every file is MIT, see [CONTRIBUTING.md](../CONTRIBUTING.md#licence). It does not look inside `external/`.
 2. The tests of that script, in `tests/tools/`, with `unittest`.
 3. `make check-pins`, then `tests/host/check_pins_test.sh`, which proves that a stale pin in a copy of the repository fails the check.
-4. The C tests, `tests/host/test_*.c`, built for the host with RobCo-Core's [`mk/host.mk`](https://github.com/RobCo-Industries/RobCo-Core/blob/79cbd82d42c1ae6df371b05f7a3f1165ec86003f/mk/host.mk). They use the CI's flags: `-std=gnu11 -Wall -Wextra -Werror`, with AddressSanitizer and UndefinedBehaviorSanitizer when the compiler has them. When the host compiler is clang, `host.mk` also compiles every file with the cross GCC to catch GCC-only warnings.
+4. The C tests, `tests/host/test_*.c`, built for the host with RobCo-Core's [`mk/host.mk`](https://github.com/RobCo-Industries/RobCo-Core/blob/712db81c9c804d4a8ede1f866ea764c0c6299844/mk/host.mk). They use the CI's flags: `-std=gnu11 -Wall -Wextra -Werror`, with AddressSanitizer and UndefinedBehaviorSanitizer when the compiler has them. When the host compiler is clang, `host.mk` also compiles every file with the cross GCC to catch GCC-only warnings.
 
 Each C test file is one binary that links Reel's sources and RobCo-Core's pure library. Tests use RobCo-Core's `rc_test.h`.
 
 ## QEMU tests
 
-`make test-target BOARD=<board>` builds the hello tape, the launcher ROM, the Pip-OS kernel and a card, then runs `tests/test_*.py` with pytest on that board. The boards are `raspi0`, `raspi1ap`, `raspi2b` and `raspi3b`. The harness is RobCo-Core's, loaded through Pip-OS's `pipos_testing` package, see Pip-OS's [TESTING.md](https://github.com/RobCo-Industries/Pip-OS/blob/5f891e75ac0894beec1d4e9d8cb37c00ec0fbf3e/docs/TESTING.md#testing-a-rom-project).
+`make test-target BOARD=<board>` builds the hello tape, the launcher ROM, the Pip-OS kernel and a card, then runs `tests/test_*.py` with pytest on that board. The boards are `raspi0`, `raspi1ap`, `raspi2b` and `raspi3b`. The harness is RobCo-Core's, loaded through Pip-OS's `pipos_testing` package, see Pip-OS's [TESTING.md](https://github.com/RobCo-Industries/Pip-OS/blob/ada823c96320f3744d2f8064d1a690d2920d048d/docs/TESTING.md#testing-a-rom-project).
 
 A tape needs a ROM to start it. The test uses its own launcher ROM in `tests/launcher/`. The Makefile builds it once per tape, with `TAPE` set to the tape's file name. It calls `holo_launch(TAPE, "")` once, logs what the call returned and exits. The SDK's `hello` example ROM can launch tapes too, but it waits for a key press, so the test would have to drive its menu.
 

@@ -1,0 +1,55 @@
+# The templates package
+
+`make templates-package` writes `build/templates-<version>.zip`, the `templates` package that `robco new` reads. RobCo-Core's [SDK_PACKAGE.md](https://github.com/RobCo-Industries/RobCo-Core/blob/712db81c9c804d4a8ede1f866ea764c0c6299844/docs/spec/SDK_PACKAGE.md#the-templates-package) fixes its layout and its manifest. The version comes from `REEL_VERSION_MAJOR`, `MINOR` and `PATCH` in `reel/include/reel/reel.h`, so `0.1.0` today.
+
+No package is published yet. A release needs the owner's agreement first.
+
+## What the archive holds
+
+| Path | Source |
+|---|---|
+| `sdk.json` | The manifest: `name`, `version`, `built_from`, `formats`, `requires`, `licences` and `files`. No `abi`, `tools` or `firmware`. |
+| `templates.json` | The list of templates, written by `tools/templates_package.py` |
+| `holotape-c/` | The files of `templates/holotape-c/` |
+| `LICENSES/MIT.txt` | This repository's `LICENSE` |
+
+`formats` is `project`, `scenario` and `templates`, each `1`. `licences` is MIT for every path. `templates.json` marks a file `substitute` when `tools/fill_template.py` replaces its tokens, so the package and Reel's own tests fill a template the same way.
+
+## What the target does
+
+```mermaid
+flowchart LR
+    G["git status: clean tree"] --> L["git ls-files: LICENSE, templates/"]
+    L --> C["git rev-parse HEAD"]
+    C --> B["tools/templates_package.py"]
+    B --> Z["templates-version.zip"]
+```
+
+1. It stops when the work tree has a change or an untracked file, since `built_from` names the commit. The build folder is output, so the check leaves it out when `BUILD` lies inside the checkout, such as `make templates-package BUILD=out`. Git gets it after `--` as `:(top,exclude,literal)<folder>`, which git 2.43 in the CI image reads. A `BUILD` that is the checkout itself or holds tracked files is refused. `BUILD` changes no other git call: `git ls-files` lists `LICENSE` and `templates/` only, and `git rev-parse HEAD` reads the commit. The archive has the same SHA-256 for any `BUILD`.
+2. Only the files git tracks go in. Each git call stops the build with git's own message when it fails, such as "detected dubious ownership" in a container that does not own the checkout.
+3. Before it writes, the tool searches every file, `sdk.json` included, for the checkout's path, the build folder, `$HOME`, the host name and the user name in its home folder forms. A hit refuses the package.
+4. The archive is written with the zip writer of Pip-OS's `tools/sdk_package.py`: `sdk.json` first, then the files in byte order, stored, dated 1980-01-01 00:00, mode 0644. Two builds of one commit give the same SHA-256.
+
+`tests/tools/test_templates_package.py` checks the layout against the spec's `templates.json`, the equal bytes, each refusal and a failing `git`. In a scratch clone it checks that `BUILD=out` builds on a clean tree with the default's bytes, that an untracked file in `out/` passes and one outside fails, and that `BUILD=.` and `BUILD=templates` are refused.
+
+## The checker
+
+`make templates-package-check` runs Pip-OS's `tools/sdk_package.py check` on the archive, unchanged. The `name` in `sdk.json` picks its `templates` rules, described in Pip-OS's [SDK_PACKAGE.md](https://github.com/RobCo-Industries/Pip-OS/blob/ada823c96320f3744d2f8064d1a690d2920d048d/docs/SDK_PACKAGE.md#rules-of-a-kind). It checks:
+
+- The file name against the `name` and `version` of `sdk.json`, and every entry name.
+- The fields of `sdk.json`: no `abi`, `tools` or `firmware`, the three `formats`, `built_from` with `RobCo-Reel` alone, MIT for every path.
+- Each file's size and SHA-256 against `files`, its CRC, and no file left unlisted.
+- `templates.json` against the spec, the `holotape-c` entry and its `robco.toml` and `tests/start.toml` byte for byte.
+- The layout: `templates.json`, `LICENSES/MIT.txt` and one folder per template, nothing else.
+- No checkout path, build folder, home folder or user name in any file.
+
+It does not check that `icon.pbm` is a 32x32 PBM, the rules of `src/main.c`, or that the golden image comes from QEMU. The QEMU test of the template covers those.
+
+The check runs in the main CI after `make templates-package`, and in the `templates-package` workflow before the upload. `tests/tools/test_templates_package.py` builds a package, sees the check pass, flips one byte of `holotape-c/src/main.c` in a copy and sees the check fail.
+
+## The workflow
+
+`.github/workflows/templates-package.yml` runs on every pull request, on `main` and on a tag `templates-*`:
+
+- `package` runs the tool tests, builds the package twice, compares the SHA-256 kept in `$RUNNER_TEMP` outside the checkout, runs the check and uploads the archive as the `templates-package` artifact. On a tag it checks that the tag names the archive it built. The tag reaches the script only through `env:`, and `make check-workflows` refuses a pasted expression.
+- `publish` runs only when `github.event_name` is `push` and the ref starts with `refs/tags/templates-`. It alone holds `contents: write`. It attaches the archive to a release of that tag.
