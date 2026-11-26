@@ -4,6 +4,7 @@
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -16,6 +17,13 @@ TOOL = os.path.join(ROOT, "tools", "templates_package.py")
 HEADER = os.path.join(ROOT, "reel", "include", "reel", "reel.h")
 CHECKER = os.path.join(ROOT, "external", "pip-os", "tools", "sdk_package.py")
 COMMIT = "0123456789abcdef0123456789abcdef01234567"
+
+
+def zip_name(header=HEADER):
+    """The archive's name, from the version the tool reads in the header."""
+    r = subprocess.run([sys.executable, TOOL, "--print-version", "--version-header", header],
+                       capture_output=True, text=True, check=True, env={"PATH": os.environ["PATH"]})
+    return f"templates-{r.stdout.strip()}.zip"
 
 # SDK_PACKAGE.md, "The holotape-c template": the templates.json it gives.
 SPEC_INDEX = {
@@ -47,11 +55,11 @@ class TemplatesPackage(unittest.TestCase):
         self.tmp = tmp.name
         self.out = os.path.join(self.tmp, "out")
 
-    def run_tool(self, tracked=TRACKED, root=ROOT, extra=()):
+    def run_tool(self, tracked=TRACKED, root=ROOT, extra=(), header=HEADER):
         lst = os.path.join(self.tmp, "list")
         with open(lst, "wb") as f:
             f.write(b"".join(t.encode() + b"\0" for t in tracked))
-        r = subprocess.run([sys.executable, TOOL, "--out", self.out, "--version-header", HEADER,
+        r = subprocess.run([sys.executable, TOOL, "--out", self.out, "--version-header", header,
                             "--built-from", f"RobCo-Reel={COMMIT}", "--tracked", lst,
                             "--root", root, *extra],
                            capture_output=True, text=True, env={"PATH": os.environ["PATH"]})
@@ -65,10 +73,10 @@ class TemplatesPackage(unittest.TestCase):
     def test_checker_passes_the_package_and_refuses_a_spoiled_copy(self):
         code, log = self.run_tool()
         self.assertEqual(code, 0, log)
-        zpath = os.path.join(self.out, "templates-0.1.0.zip")
+        zpath = os.path.join(self.out, zip_name())
         code, log = self.check(zpath)
         self.assertEqual(code, 0, log)
-        spoiled = os.path.join(self.tmp, "spoiled", "templates-0.1.0.zip")
+        spoiled = os.path.join(self.tmp, "spoiled", zip_name())
         os.makedirs(os.path.dirname(spoiled))
         shutil.copyfile(zpath, spoiled)
         with zipfile.ZipFile(spoiled) as z:
@@ -88,7 +96,7 @@ class TemplatesPackage(unittest.TestCase):
     def test_layout_and_manifest(self):
         code, log = self.run_tool()
         self.assertEqual(code, 0, log)
-        zpath = os.path.join(self.out, "templates-0.1.0.zip")
+        zpath = os.path.join(self.out, zip_name())
         with zipfile.ZipFile(zpath) as z:
             names = z.namelist()
             doc = json.loads(z.read("sdk.json"))
@@ -115,21 +123,36 @@ class TemplatesPackage(unittest.TestCase):
         sums = []
         for _ in range(2):
             self.assertEqual(self.run_tool()[0], 0)
-            with open(os.path.join(self.out, "templates-0.1.0.zip"), "rb") as f:
+            with open(os.path.join(self.out, zip_name()), "rb") as f:
                 sums.append(hashlib.sha256(f.read()).hexdigest())
         self.assertEqual(sums[0], sums[1])
+
+    def test_archive_follows_the_version_header(self):
+        header = os.path.join(self.tmp, "reel.h")
+        with open(HEADER) as f:
+            text = f.read()
+        for p, n in (("MAJOR", 7), ("MINOR", 8), ("PATCH", 9)):
+            text = re.sub(rf"^(#define\s+REEL_VERSION_{p}\s+)\d+", rf"\g<1>{n}", text, flags=re.M)
+        with open(header, "w") as f:
+            f.write(text)
+        self.assertEqual(zip_name(header), "templates-7.8.9.zip")
+        code, log = self.run_tool(header=header)
+        self.assertEqual(code, 0, log)
+        self.assertEqual(log.strip(), os.path.join(self.out, "templates-7.8.9.zip"))
+        with zipfile.ZipFile(os.path.join(self.out, zip_name(header))) as z:
+            self.assertEqual(json.loads(z.read("sdk.json"))["version"], "7.8.9")
 
     def test_untracked_file_stays_out(self):
         code, log = self.run_tool(tracked=[t for t in TRACKED if not t.endswith("icon.pbm")])
         self.assertEqual(code, 0, log)
-        with zipfile.ZipFile(os.path.join(self.out, "templates-0.1.0.zip")) as z:
+        with zipfile.ZipFile(os.path.join(self.out, zip_name())) as z:
             self.assertNotIn("holotape-c/icon.pbm", z.namelist())
 
     def test_refuses_a_forbidden_text(self):
         code, log = self.run_tool(extra=("--forbid", "draws one screen"))
         self.assertEqual(code, 1)
         self.assertIn("templates.json: holds 'draws one screen'", log)
-        self.assertFalse(os.path.exists(os.path.join(self.out, "templates-0.1.0.zip")))
+        self.assertFalse(os.path.exists(os.path.join(self.out, zip_name())))
 
     def test_refuses_a_user_home(self):
         root = os.path.join(self.tmp, "root")
@@ -173,7 +196,7 @@ class MakeGitCalls(unittest.TestCase):
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("fatal: detected dubious ownership", r.stderr)
             self.assertIn("templates-package: git status failed", r.stderr)
-            self.assertFalse(os.path.exists(os.path.join(tmp, "build", "templates-0.1.0.zip")))
+            self.assertFalse(os.path.exists(os.path.join(tmp, "build", zip_name())))
 
 
 if __name__ == "__main__":
