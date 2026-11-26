@@ -18,7 +18,7 @@ jobs:
     uses: RobCo-Industries/RobCo-Core/.github/workflows/robco-ci.yml@712db81c9c804d4a8ede1f866ea764c0c6299844
     with:
       image-tag: ba6372158e4b
-      make-targets: all test-host
+      make-targets: all test-host templates-package templates-package-check
       test-targets: test-target
       boards: '["raspi0","raspi1ap","raspi2b","raspi3b"]'
       artifact-path: build/samples/hello/HELLO.HTP
