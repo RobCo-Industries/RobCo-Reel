@@ -25,12 +25,12 @@ flowchart LR
     B --> Z["templates-version.zip"]
 ```
 
-1. It stops when the work tree has a change or an untracked file, since `built_from` names the commit.
+1. It stops when the work tree has a change or an untracked file, since `built_from` names the commit. The build folder is output, so the check leaves it out when `BUILD` lies inside the checkout, such as `make templates-package BUILD=out`. Git gets it after `--` as `:(top,exclude,literal)<folder>`, which git 2.43 in the CI image reads. A `BUILD` that is the checkout itself or holds tracked files is refused. `BUILD` changes no other git call: `git ls-files` lists `LICENSE` and `templates/` only, and `git rev-parse HEAD` reads the commit. The archive has the same SHA-256 for any `BUILD`.
 2. Only the files git tracks go in. Each git call stops the build with git's own message when it fails, such as "detected dubious ownership" in a container that does not own the checkout.
 3. Before it writes, the tool searches every file, `sdk.json` included, for the checkout's path, the build folder, `$HOME`, the host name and the user name in its home folder forms. A hit refuses the package.
 4. The archive is written with the zip writer of Pip-OS's `tools/sdk_package.py`: `sdk.json` first, then the files in byte order, stored, dated 1980-01-01 00:00, mode 0644. Two builds of one commit give the same SHA-256.
 
-`tests/tools/test_templates_package.py` checks the layout against the spec's `templates.json`, the equal bytes, each refusal and a failing `git`.
+`tests/tools/test_templates_package.py` checks the layout against the spec's `templates.json`, the equal bytes, each refusal and a failing `git`. In a scratch clone it checks that `BUILD=out` builds on a clean tree with the default's bytes, that an untracked file in `out/` passes and one outside fails, and that `BUILD=.` and `BUILD=templates` are refused.
 
 ## The checker
 

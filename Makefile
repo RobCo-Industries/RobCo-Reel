@@ -74,8 +74,21 @@ PKG_FORBID   = --forbid "$(CURDIR)" --forbid "$(abspath $(BUILD))" \
                --forbid "$$HOME" --forbid "$$(hostname)" --user "$$(id -un)"
 
 .PHONY: templates-package templates-package-check
+#
+# The build folder is output, not input: when BUILD lies inside the checkout,
+# git status leaves it out by a literal pathspec, after --. host.mk writes
+# into it while make reads this file, so it may hold files on a clean
+# checkout. A BUILD that is the checkout or holds tracked files is refused.
 templates-package:
-	@t=$$(git status --porcelain --untracked-files=all) || { \
+	@mkdir -p -- '$(BUILD)' && b=$$(cd -- '$(BUILD)' && pwd -P) && top=$$(pwd -P) || exit 1; \
+	x=; case "$$b/" in \
+	"$$top/") echo "templates-package: BUILD=$(BUILD) is the checkout itself, pick a folder for the output only" >&2; exit 1;; \
+	"$$top/"*) r=$${b#"$$top/"}; \
+	    if [ -n "$$(git ls-files -- ":(top,literal)$$r")" ]; then \
+	        echo "templates-package: BUILD=$(BUILD) holds tracked files, pick a folder for the output only" >&2; exit 1; fi; \
+	    x=":(top,exclude,literal)$$r";; \
+	esac; \
+	t=$$(git status --porcelain --untracked-files=all -- $${x:+"$$x"}) || { \
 	    echo "templates-package: git status failed in $(CURDIR), see git's message above" >&2; exit 1; }; \
 	if [ -n "$$t" ]; then \
 	    echo "templates-package: the work tree has changes, so built_from would not name its sources:" >&2; \

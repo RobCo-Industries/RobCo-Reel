@@ -199,5 +199,83 @@ class MakeGitCalls(unittest.TestCase):
             self.assertFalse(os.path.exists(os.path.join(tmp, "build", zip_name())))
 
 
+def git(cwd, *args):
+    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=cwd,
+                          check=True, capture_output=True, env={"PATH": os.environ["PATH"]}).stdout
+
+
+class MakeBuildFolder(unittest.TestCase):
+    """The clean check leaves out a BUILD inside the checkout, in a scratch clone."""
+
+    @classmethod
+    def setUpClass(cls):
+        tmp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(tmp.cleanup)
+        cls.repo = os.path.join(tmp.name, "reel")
+        # Local files only: the clone takes HEAD, the work tree's Makefile, and
+        # the submodules as plain files from git archive.
+        subprocess.run(["git", "clone", "-q", "--no-hardlinks", ROOT, cls.repo], check=True,
+                       env={"PATH": os.environ["PATH"]})
+        shutil.copy(os.path.join(ROOT, "Makefile"), os.path.join(cls.repo, "Makefile"))
+        git(cls.repo, "rm", "-q", "--cached", "external/pip-os")
+        for sub in ("external/pip-os", "external/pip-os/external/robco-core"):
+            dest = os.path.join(cls.repo, sub)
+            os.makedirs(dest, exist_ok=True)
+            data = git(os.path.join(ROOT, sub), "archive", "HEAD")
+            subprocess.run(["tar", "-x", "-C", dest], input=data, check=True)
+        git(cls.repo, "add", "-A")
+        git(cls.repo, "commit", "-q", "-m", "scratch")
+
+    def make(self, build):
+        return subprocess.run(["make", "--no-print-directory", "-C", self.repo, "templates-package",
+                               f"BUILD={build}"], capture_output=True, text=True,
+                              env={"PATH": os.environ["PATH"], "HOME": os.path.join(self.repo, "nohome")})
+
+    def tearDown(self):
+        git(self.repo, "clean", "-qfdx")
+
+    def digest(self, build):
+        path = os.path.join(self.repo, build, zip_name())
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+
+    def test_out_builds_on_a_clean_tree_with_the_default_bytes(self):
+        r = self.make("out")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        out = self.digest("out")
+        git(self.repo, "clean", "-qfdx")
+        r = self.make("build")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(out, self.digest("build"))
+
+    def test_untracked_file_inside_out_passes(self):
+        os.makedirs(os.path.join(self.repo, "out"))
+        open(os.path.join(self.repo, "out", "stray"), "w").close()
+        r = self.make("out")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_untracked_file_outside_out_fails(self):
+        open(os.path.join(self.repo, "stray"), "w").close()
+        r = self.make("out")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("?? stray", r.stderr)
+
+    def test_dash_name_is_a_literal_path(self):
+        open(os.path.join(self.repo, "stray"), "w").close()
+        r = self.make("-x*")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("?? stray", r.stderr)
+
+    def test_checkout_itself_is_refused(self):
+        r = self.make(".")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("is the checkout itself", r.stderr)
+
+    def test_folder_with_tracked_files_is_refused(self):
+        r = self.make("templates")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("holds tracked files", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
