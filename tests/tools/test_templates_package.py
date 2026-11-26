@@ -14,6 +14,7 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TOOL = os.path.join(ROOT, "tools", "templates_package.py")
 HEADER = os.path.join(ROOT, "reel", "include", "reel", "reel.h")
+CHECKER = os.path.join(ROOT, "external", "pip-os", "tools", "sdk_package.py")
 COMMIT = "0123456789abcdef0123456789abcdef01234567"
 
 # SDK_PACKAGE.md, "The holotape-c template": the templates.json it gives.
@@ -55,6 +56,34 @@ class TemplatesPackage(unittest.TestCase):
                             "--root", root, *extra],
                            capture_output=True, text=True, env={"PATH": os.environ["PATH"]})
         return r.returncode, r.stdout + r.stderr
+
+    def check(self, zpath):
+        r = subprocess.run([sys.executable, CHECKER, "check", zpath, "--forbid", ROOT],
+                           capture_output=True, text=True, env={"PATH": os.environ["PATH"]})
+        return r.returncode, r.stdout + r.stderr
+
+    def test_checker_passes_the_package_and_refuses_a_spoiled_copy(self):
+        code, log = self.run_tool()
+        self.assertEqual(code, 0, log)
+        zpath = os.path.join(self.out, "templates-0.1.0.zip")
+        code, log = self.check(zpath)
+        self.assertEqual(code, 0, log)
+        spoiled = os.path.join(self.tmp, "spoiled", "templates-0.1.0.zip")
+        os.makedirs(os.path.dirname(spoiled))
+        shutil.copyfile(zpath, spoiled)
+        with zipfile.ZipFile(spoiled) as z:
+            info = z.getinfo("holotape-c/src/main.c")
+        with open(spoiled, "r+b") as f:
+            f.seek(info.header_offset + 26)
+            name_len, extra_len = int.from_bytes(f.read(2), "little"), int.from_bytes(f.read(2), "little")
+            at = info.header_offset + 30 + name_len + extra_len
+            f.seek(at)
+            byte = f.read(1)
+            f.seek(at)
+            f.write(bytes([byte[0] ^ 0x01]))
+        code, log = self.check(spoiled)
+        self.assertEqual(code, 1, log)
+        self.assertIn("holotape-c/src/main.c", log)
 
     def test_layout_and_manifest(self):
         code, log = self.run_tool()
