@@ -26,4 +26,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ree
 ### Changed
 
 - Pip-OS pin moved to `a0a523e`, whose package checker knows the `templates` kind, with RobCo-Core `712db81` inside it.
+- `make check-workflows` runs Pip-OS's `tools/check_workflow_exprs.py` on this repository's workflows, in place of Reel's own `tools/check_workflows.py`, which missed `${{ github.ref }}` and other forms. A tool test shows a pasted `${{ github.ref }}` fails it.
+- The `templates-package` workflow keeps the first build's checksum in `$RUNNER_TEMP`. At the repository root, it made the second build refuse the tree on every run.
 - Pip-OS pin moved to `ada823c`, which has the workflow guard `tools/check_workflow_exprs.py`, with RobCo-Core `712db81` inside it. Its new boot text that writes itself is off by default, so Reel needs no change.

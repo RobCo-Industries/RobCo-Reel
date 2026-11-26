@@ -27,10 +27,11 @@ Pip-OS is the only submodule, in `external/pip-os`. RobCo-Core comes inside it, 
 | `make` | Builds the sample tapes into `build/samples/`. Today that is `build/samples/hello/HELLO.HTP`. |
 | `make template` | Fills `templates/holotape-c` into `build/template/holotape-c/` with the project name `HOLOC`, then builds `build/template/holotape-c/build/HOLOC.HTP` there. `make` runs it too. |
 | `make CI=1` | The same, with warnings as errors, as CI builds. |
-| `make test-host` | The licence check, the tool tests, the pin checks and the host unit tests. |
+| `make test-host` | The licence check, the workflow check, the tool tests, the pin checks and the host unit tests. |
 | `make test-target BOARD=raspi2b` | The QEMU tests on one board. `BOARD=all`, the default, runs the four boards. |
 | `make test` | `test-host`, then `test-target`. |
 | `make check-licence` | Fails on a GNU licence notice, an SPDX identifier other than MIT, or a C file without an MIT SPDX first line. |
+| `make check-workflows` | Runs Pip-OS's `tools/check_workflow_exprs.py` on `.github/workflows/*.yml` and `*.yaml`. A line with `${{` passes only as `KEY: value`, so every value reaches a script through `env:`. |
 | `make check-pins` | The CI workflow and the doc links name the commits the submodules hold. |
 | `make templates-package` | Writes `build/templates-<version>.zip`, the templates package. See [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md). |
 | `make templates-package-check` | Runs Pip-OS's package checker on that archive with its `templates` rules. CI runs it. See [TEMPLATES_PACKAGE.md](TEMPLATES_PACKAGE.md#the-checker). |

@@ -62,8 +62,9 @@ jobs:
       - name: Check the package
         run: make templates-package-check PYTHON=python3
       # The tag's name reaches the shell only through env, never pasted
-      # into the script: tools/check_workflows.py refuses that. The tag
-      # must be exactly templates-<version of reel.h>.
+      # into the script: Pip-OS's tools/check_workflow_exprs.py, run by
+      # make check-workflows, refuses that. The tag must be exactly
+      # templates-<version of reel.h>.
       - name: The tag names the package
         if: startsWith(github.ref, 'refs/tags/templates-')
         env:

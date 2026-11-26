@@ -51,5 +51,5 @@ The check runs in the main CI after `make templates-package`, and in the `templa
 
 `.github/workflows/templates-package.yml` runs on every pull request, on `main` and on a tag `templates-*`:
 
-- `package` runs the tool tests, builds the package twice, compares the SHA-256, runs the check and uploads the archive as the `templates-package` artifact. On a tag it checks that the tag names the archive it built.
+- `package` runs the tool tests, builds the package twice, compares the SHA-256 kept in `$RUNNER_TEMP` outside the checkout, runs the check and uploads the archive as the `templates-package` artifact. On a tag it checks that the tag names the archive it built. The tag reaches the script only through `env:`, and `make check-workflows` refuses a pasted expression.
 - `publish` runs only when `github.event_name` is `push` and the ref starts with `refs/tags/templates-`. It alone holds `contents: write`. It attaches the archive to a release of that tag.

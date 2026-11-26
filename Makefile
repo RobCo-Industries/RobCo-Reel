@@ -111,9 +111,12 @@ $(HOST_TESTS): $(wildcard reel/include/reel/*.h)
 check-licence:
 	$(PYTHON) tools/check_licence.py
 
-# No tag, branch or event text pasted into a workflow's run: script.
+# Pip-OS's guard, called as Pip-OS's Makefile calls it: a workflow line
+# with ${{ passes only as KEY: value, so every value reaches a script
+# through env:. WORKFLOWS is set by the wiring test only.
+WORKFLOWS ?= $(wildcard .github/workflows/*.yml .github/workflows/*.yaml)
 check-workflows:
-	$(PYTHON) tools/check_workflows.py
+	$(PYTHON) -I $(PIP_OS)/tools/check_workflow_exprs.py $(WORKFLOWS)
 
 # RobCo-Core's scripts: the CI pins, then the doc links once per pinned
 # repository, Pip-OS and the RobCo-Core inside it.
