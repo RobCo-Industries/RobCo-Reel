@@ -11,6 +11,9 @@
 #   make test-target          the QEMU tests only (BOARD=<name> or all)
 #   make check-licence        every file is MIT, every C file says so
 #   make check-pins           CI pins and doc links match the submodules
+#   make templates-package    build/templates-<version>.zip, the templates
+#                             package: see docs/TEMPLATES_PACKAGE.md
+#   make templates-package-check  Pip-OS's package checker on that archive
 #   make clean
 
 PIP_OS     := external/pip-os
@@ -57,6 +60,39 @@ template:
 	rm -rf $(TEMPLATE_DIR)
 	$(PYTHON) tools/fill_template.py $(TEMPLATE) $(TEMPLATE_DIR) $(TEMPLATE_NAME)
 	$(SUB_MAKE) -C $(TEMPLATE_DIR) -f $(abspath tests/template/Makefile) NAME=$(TEMPLATE_NAME)
+
+# ---- The templates package --------------------------------------------------
+
+# tools/templates_package.py writes the archive from the files git tracks,
+# so the work tree must be clean and built_from names its commit. Each git
+# call stops the build with git's own message when it fails. The checker
+# is Pip-OS's tools/sdk_package.py, used as it stands.
+PKG_LIST    := $(abspath $(BUILD))/templates-package.files
+PKG_HEADER  := reel/include/reel/reel.h
+PKG_CHECK   := $(PIP_OS)/tools/sdk_package.py
+PKG_FORBID   = --forbid "$(CURDIR)" --forbid "$(abspath $(BUILD))" \
+               --forbid "$$HOME" --forbid "$$(hostname)" --user "$$(id -un)"
+
+.PHONY: templates-package templates-package-check
+templates-package:
+	@t=$$(git status --porcelain --untracked-files=all) || { \
+	    echo "templates-package: git status failed in $(CURDIR), see git's message above" >&2; exit 1; }; \
+	if [ -n "$$t" ]; then \
+	    echo "templates-package: the work tree has changes, so built_from would not name its sources:" >&2; \
+	    echo "$$t" >&2; exit 1; fi
+	@mkdir -p $(abspath $(BUILD))
+	@git ls-files -z -- LICENSE templates > $(PKG_LIST) || { \
+	    echo "templates-package: git ls-files failed, see git's message above" >&2; exit 1; }; \
+	test -s $(PKG_LIST) || { echo "templates-package: git ls-files listed no file" >&2; exit 1; }
+	@c=$$(git rev-parse --verify HEAD) && [ -n "$$c" ] || { \
+	    echo "templates-package: git cannot name the commit of $(CURDIR), see git's message above" >&2; exit 1; }; \
+	$(PYTHON) tools/templates_package.py --out $(abspath $(BUILD)) \
+	    --version-header $(PKG_HEADER) --built-from RobCo-Reel=$$c \
+	    --tracked $(PKG_LIST) $(PKG_FORBID)
+
+templates-package-check:
+	@v=$$($(PYTHON) tools/templates_package.py --print-version --version-header $(PKG_HEADER)) || exit 1; \
+	$(PYTHON) $(PKG_CHECK) check $(abspath $(BUILD))/templates-$$v.zip --skip-short $(PKG_FORBID)
 
 # ---- Host unit tests, with RobCo-Core's host.mk ------------------------------
 
