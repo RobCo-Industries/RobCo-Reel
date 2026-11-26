@@ -15,7 +15,7 @@ jobs:
     # inside Pip-OS, external/pip-os/external/robco-core, and its
     # ci/IMAGE_TAG. `make check-pins` checks both. The reusable workflow
     # checks out with submodules: recursive, which also fetches it.
-    uses: RobCo-Industries/RobCo-Core/.github/workflows/robco-ci.yml@79cbd82d42c1ae6df371b05f7a3f1165ec86003f
+    uses: RobCo-Industries/RobCo-Core/.github/workflows/robco-ci.yml@712db81c9c804d4a8ede1f866ea764c0c6299844
     with:
       image-tag: ba6372158e4b
       make-targets: all test-host

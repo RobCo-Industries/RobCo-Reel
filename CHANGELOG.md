@@ -19,3 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ree
 - `make template`: fills the template into `build/template/` and builds it through `tests/template/Makefile` and `pipos-app.mk`.
 - A QEMU test that boots the template tape on the four boards, compares its screen with the golden image, presses SELECT and reads exit status 0.
 - CI through RobCo-Core's `robco-ci.yml`, with the pin and doc link checks.
+
+### Changed
+
+- Pip-OS pin moved to `93a07d2`, the commit that builds the `pipos` SDK package, with RobCo-Core `712db81` inside it.
