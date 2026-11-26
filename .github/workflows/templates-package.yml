@@ -50,11 +50,13 @@ jobs:
         run: |
           make templates-package PYTHON=python3
           ls build/templates-*.zip
-          sha256sum build/templates-*.zip | tee first.sha256
+          sha256sum build/templates-*.zip | tee "$RUNNER_TEMP/first.sha256"
+      # The checksum stays outside the checkout: make templates-package
+      # refuses a tree with an untracked file.
       - name: A second build gives the same bytes
         run: |
           make templates-package PYTHON=python3
-          sha256sum -c first.sha256
+          sha256sum -c "$RUNNER_TEMP/first.sha256"
       # Pip-OS's tools/sdk_package.py check, with the templates rules of its
       # docs/SDK_PACKAGE.md. A broken rule fails the job before any upload.
       - name: Check the package
