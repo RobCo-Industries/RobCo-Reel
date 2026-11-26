@@ -2,7 +2,7 @@
 
 ## Tools
 
-The same tools as Pip-OS, see Pip-OS's [BUILD.md](https://github.com/RobCo-Industries/Pip-OS/blob/93a07d266be43feab3e96e186d40c8b536f54bae/docs/BUILD.md#tools):
+The same tools as Pip-OS, see Pip-OS's [BUILD.md](https://github.com/RobCo-Industries/Pip-OS/blob/a0a523e121b71c29b6e0739a87bc5fa9d2890b47/docs/BUILD.md#tools):
 
 - GNU Make and a POSIX shell.
 - `arm-none-eabi-gcc` and binutils, for the tapes and the launcher ROM.
@@ -38,7 +38,7 @@ Pip-OS is the only submodule, in `external/pip-os`. RobCo-Core comes inside it, 
 
 ## How a tape is built
 
-A sample's `Makefile` sets the tape's name and sources, includes `reel/reel.mk`, then the Pip-OS SDK's [`pipos-app.mk`](https://github.com/RobCo-Industries/Pip-OS/blob/93a07d266be43feab3e96e186d40c8b536f54bae/sdk/pipos-app.mk). `reel.mk` adds Reel's sources to `SRCS` and its headers to the include path. The SDK compiles everything with its own flags: ARMv6, soft float, freestanding. It links with `crt0`, `holotape.ld` and `libpip.a`, seals the image as `ROBCO78` with RobCo-Core's `rimg.py` and verifies it.
+A sample's `Makefile` sets the tape's name and sources, includes `reel/reel.mk`, then the Pip-OS SDK's [`pipos-app.mk`](https://github.com/RobCo-Industries/Pip-OS/blob/a0a523e121b71c29b6e0739a87bc5fa9d2890b47/sdk/pipos-app.mk). `reel.mk` adds Reel's sources to `SRCS` and its headers to the include path. The SDK compiles everything with its own flags: ARMv6, soft float, freestanding. It links with `crt0`, `holotape.ld` and `libpip.a`, seals the image as `ROBCO78` with RobCo-Core's `rimg.py` and verifies it.
 
 ```mermaid
 flowchart LR
