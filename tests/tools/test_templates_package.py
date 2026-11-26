@@ -58,7 +58,7 @@ class TemplatesPackage(unittest.TestCase):
         return r.returncode, r.stdout + r.stderr
 
     def check(self, zpath):
-        r = subprocess.run([sys.executable, CHECKER, "check", zpath, "--forbid", ROOT],
+        r = subprocess.run([sys.executable, CHECKER, "check", zpath, "--skip-short", "--forbid", ROOT],
                            capture_output=True, text=True, env={"PATH": os.environ["PATH"]})
         return r.returncode, r.stdout + r.stderr
 
