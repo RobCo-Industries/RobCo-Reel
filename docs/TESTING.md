@@ -13,7 +13,7 @@ Each C test file is one binary that links Reel's sources and RobCo-Core's pure l
 
 ## QEMU tests
 
-`make test-target BOARD=<board>` builds the hello tape, the launcher ROM, the Pip-OS kernel and a card, then runs `tests/test_*.py` with pytest on that board. The boards are `raspi0`, `raspi1ap`, `raspi2b` and `raspi3b`. The harness is RobCo-Core's, loaded through Pip-OS's `pipos_testing` package, see Pip-OS's [TESTING.md](https://github.com/RobCo-Industries/Pip-OS/blob/a0a523e121b71c29b6e0739a87bc5fa9d2890b47/docs/TESTING.md#testing-a-rom-project).
+`make test-target BOARD=<board>` builds the hello tape, the launcher ROM, the Pip-OS kernel and a card, then runs `tests/test_*.py` with pytest on that board. The boards are `raspi0`, `raspi1ap`, `raspi2b` and `raspi3b`. The harness is RobCo-Core's, loaded through Pip-OS's `pipos_testing` package, see Pip-OS's [TESTING.md](https://github.com/RobCo-Industries/Pip-OS/blob/ada823c96320f3744d2f8064d1a690d2920d048d/docs/TESTING.md#testing-a-rom-project).
 
 A tape needs a ROM to start it. The test uses its own launcher ROM in `tests/launcher/`. The Makefile builds it once per tape, with `TAPE` set to the tape's file name. It calls `holo_launch(TAPE, "")` once, logs what the call returned and exits. The SDK's `hello` example ROM can launch tapes too, but it waits for a key press, so the test would have to drive its menu.
 

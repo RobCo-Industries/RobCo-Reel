@@ -26,3 +26,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ree
 ### Changed
 
 - Pip-OS pin moved to `a0a523e`, whose package checker knows the `templates` kind, with RobCo-Core `712db81` inside it.
+- Pip-OS pin moved to `ada823c`, which has the workflow guard `tools/check_workflow_exprs.py`, with RobCo-Core `712db81` inside it. Its new boot text that writes itself is off by default, so Reel needs no change.

@@ -34,7 +34,7 @@ flowchart LR
 
 ## The checker
 
-`make templates-package-check` runs Pip-OS's `tools/sdk_package.py check` on the archive, unchanged. The `name` in `sdk.json` picks its `templates` rules, described in Pip-OS's [SDK_PACKAGE.md](https://github.com/RobCo-Industries/Pip-OS/blob/a0a523e121b71c29b6e0739a87bc5fa9d2890b47/docs/SDK_PACKAGE.md#rules-of-a-kind). It checks:
+`make templates-package-check` runs Pip-OS's `tools/sdk_package.py check` on the archive, unchanged. The `name` in `sdk.json` picks its `templates` rules, described in Pip-OS's [SDK_PACKAGE.md](https://github.com/RobCo-Industries/Pip-OS/blob/ada823c96320f3744d2f8064d1a690d2920d048d/docs/SDK_PACKAGE.md#rules-of-a-kind). It checks:
 
 - The file name against the `name` and `version` of `sdk.json`, and every entry name.
 - The fields of `sdk.json`: no `abi`, `tools` or `firmware`, the three `formats`, `built_from` with `RobCo-Reel` alone, MIT for every path.
